@@ -1,0 +1,87 @@
+MISIONES POR CADA X RONDAS
+
+BLIPS DE COSITAS
+
+TESTEAR TODO
+
+COLOCAR LAS GAFAS AL PRINCIPIO
+
+
+    --[[         for round = 1, maxRounds, 1 do
+            if maxRounds/2 <= round and self.bombStatus == "stopped" then
+                bombMission = true
+                max = 50
+                waitTime = 1000
+                self.startBomb()
+            else
+                max = 1
+                waitTime = 200
+            end
+            if #self.enemies > 0 then  -- Si el array de enemigos no esta vacio, borralos al inicio de la ronda
+                for _, badNPC in pairs(self.enemies) do
+                    DeleteEntity(NetworkGetEntityFromNetworkId(badNPC))
+                end
+            end
+            for o = 1, max, 1 do
+                for i = 1, amount, 1 do  -- Creamos los Peds
+                    local spawnCoordsPed = DPS.EnemyRespawn[math.random(1, #DPS.EnemyRespawn)]
+                    while #(GetEntityCoords(self.bombs[1]) - vector3(spawnCoordsPed.x, spawnCoordsPed.y, spawnCoordsPed.z)) < 20 do
+                        spawnCoordsPed = DPS.EnemyRespawn[math.random(1, #DPS.EnemyRespawn)]
+                        Citizen.Wait(0)
+                    end
+                    local x, y, z, w = table.unpack(spawnCoordsPed)
+                    local ped = nil
+                    if round >= maxRounds/2 and math.random(0,100) > 80 then
+                        ped = CreatePed(4, DPS.JuggerNaut[math.random(1, #DPS.JuggerNaut)], x, y, z, w, true, true)
+                        Citizen.Wait(50)
+                        local roundEquipment = `WEAPON_MINIGUN`
+                        GiveWeaponToPed(ped,  roundEquipment, 500, false, true)
+                        SetCurrentPedWeapon(ped, roundEquipment, true)
+                    else
+                        ped = CreatePed(4, DPS.Enemies[math.random(1, #DPS.Enemies)], x, y, z, w, true, true)
+                        Citizen.Wait(50)
+                        local roundEquipment = DPS.RoundEquipment[round][math.random(1, #DPS.RoundEquipment[round])] 
+                        GiveWeaponToPed(ped,  roundEquipment, 500, false, true)
+                        SetCurrentPedWeapon(ped, roundEquipment, true)
+                    end
+                    SetEntityRoutingBucket(ped, self.instancia)
+                    table.insert(self.enemies, NetworkGetNetworkIdFromEntity(ped))
+                    Citizen.Wait(waitTime)
+                end
+                
+                for _, player in pairs(self.team) do  -- Hacemos que los NPCs se vuelvan locos
+                    TriggerClientEvent("dps_VR:setAgrressive", player.pSource, self.enemies, round) 
+                end
+                if self.bombStatus == "defused" then
+                    break
+                end
+                if max > 1 then
+                    Citizen.Wait(15000)
+                end
+            end
+            while self.status ~= "ended" do -- Comprobamos si los NPCs estan vivos
+                Citizen.Wait(4000)
+                local death = 0
+                for _, enemie in pairs(self.enemies) do
+                    local enemieV = NetworkGetEntityFromNetworkId(enemie)
+                    if GetEntityHealth(enemieV) == 0 then
+                        death = death + 1
+                    end
+                end
+                if death == #self.enemies then
+                    break
+                end
+            end
+            if self.status == "ended" then
+                break
+            end
+
+            print("All Enemies Dead!")
+            if round ~= maxRounds then
+                for _, player in pairs(self.team) do
+                    self.giveRoundCoins(player.pSource)
+                    TriggerClientEvent("dps_VR:startGameTimeout", player.pSource, 5000)
+                end
+                Citizen.Wait(DPS.StartTimeout + 4000)
+            end
+        end ]]
